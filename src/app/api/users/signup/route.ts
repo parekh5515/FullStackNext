@@ -2,6 +2,7 @@ import { connect } from "@/dbConfig/dbConfig";
 import User from "@/models/userModel";
 import { NextRequest, NextResponse } from "next/server";
 import bcryptjs from "bcryptjs";
+import { sendEmail } from "@/helper/mailer";
 
 connect();
 
@@ -35,6 +36,9 @@ export async function POST(request: NextRequest) {
     const savedUser = await newUser.save();
 
     console.log("savedUser", savedUser);
+
+    //send verification emauil
+    await sendEmail({ email, emailType: "VERIFY", userId: savedUser._id });
 
     return NextResponse.json({
       message: "User created successfully",
