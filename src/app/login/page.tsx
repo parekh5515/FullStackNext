@@ -4,6 +4,15 @@ import { useRouter } from "next/navigation";
 import axios from "axios";
 import { use, useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { sendEmail } from "@/helper/mailer";
+import { getEmail } from "@/services/send";
+
+type UserDataType = {
+  _id: string;
+  email: string;
+  name?: string; // Optional fields if needed
+  // Add other fields returned by your backend if necessary
+};
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,8 +21,12 @@ export default function LoginPage() {
     email: "",
     password: "",
   });
+  const [userData, setUserData] = useState<UserDataType | null>(null);
+
   const [diabledButton, setDisabledButton] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  console.log(userData);
 
   useEffect(() => {
     if (user.email.length > 0 && user.password.length > 0) {
@@ -29,6 +42,7 @@ export default function LoginPage() {
 
       const response = await axios.post("api/users/login", user);
       console.log("response of login", response.data);
+      setUserData(response.data.user);
       toast.success(response.data.message);
       router.push("/profile");
     } catch (error: any) {
@@ -37,9 +51,26 @@ export default function LoginPage() {
         error?.response?.data?.error || "Something went wrong!";
 
       toast.error(errorMessage);
+      setUserData(null);
       // alert(error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const onReset = async () => {
+    try {
+      if (userData) {
+        const response = await axios.post("api/users/loginemail", {
+          email: userData.email,
+          emailType: "RESET",
+          userId: userData._id,
+        });
+        console.log("response of login email", response.data);
+      }
+    } catch (error: any) {
+      console.log("error in reset", error.message);
+      toast.error(error.message);
     }
   };
 
@@ -72,6 +103,7 @@ export default function LoginPage() {
         {diabledButton ? "Not Login" : "Login"}
       </button>
       <Link href="/signup"> Go To Signup Page</Link>
+      <Link href="/reset"> ResetPassword</Link>
     </div>
   );
 }
